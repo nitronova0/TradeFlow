@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeFlow — Trading & Risk Calculator</title>
+<style>
+:root{
+  --bg:#0b0e13;
+  --panel:#11161e;
+  --panel2:#151b24;
+  --border:#27303c;
+  --text:#f1f4f8;
+  --muted:#8f9aaa;
+  --green:#39d98a;
+  --red:#ff6673;
+  --blue:#6da8ff;
+  --yellow:#f4c95d;
+  --shadow:0 12px 35px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+header{
+  border-bottom:1px solid var(--border);
+  background:#0d1117;
+  padding:18px 28px;
+  position:sticky;top:0;z-index:10;
+}
+.header-inner{max-width:1400px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font-weight:800;letter-spacing:.5px;font-size:20px}
+.brand span{color:var(--blue)}
+.status{font-size:12px;color:var(--muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px}
+.container{max-width:1400px;margin:28px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:1.25fr 1fr .9fr;gap:18px}
+.panel{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:18px;box-shadow:var(--shadow);
+}
+.panel h2{font-size:15px;margin:0 0 5px}
+.panel .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px}
+input,select{
+  width:100%;background:#0c1016;color:var(--text);
+  border:1px solid var(--border);border-radius:8px;padding:10px 11px;
+  outline:none;font-size:14px;
+}
+input:focus,select:focus{border-color:#557dbb}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.full{grid-column:1/-1}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px}
+.mode button{
+  background:#0c1016;color:var(--muted);border:1px solid var(--border);
+  border-radius:8px;padding:10px;cursor:pointer;font-weight:600;
+}
+.mode button.active{color:var(--text);border-color:var(--blue);background:#111c2c}
+button.primary{
+  width:100%;margin-top:15px;border:0;border-radius:9px;padding:11px;
+  background:#e9edf3;color:#0b0e13;font-weight:800;cursor:pointer;
+}
+button.primary:hover{filter:brightness(1.08)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:10px;padding:13px;
+}
+.metric .k{font-size:11px;color:var(--muted);margin-bottom:6px}
+.metric .v{font-size:19px;font-weight:750}
+.green{color:var(--green)} .red{color:var(--red)} .blue{color:var(--blue)} .yellow{color:var(--yellow)}
+.note{
+  margin-top:13px;padding:11px;border-left:3px solid var(--yellow);
+  background:#17150d;color:#bdb59a;font-size:11px;line-height:1.5;
+}
+.section-title{margin:22px 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.ticker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ticker{
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:10px;padding:12px;min-width:0;
+}
+.ticker-top{display:flex;justify-content:space-between;gap:8px}
+.symbol{font-weight:750;font-size:13px}
+.price{font-size:18px;margin:8px 0 4px}
+.change{font-size:11px}
+.small{font-size:11px;color:var(--muted)}
+.api-box{margin-top:12px;display:flex;gap:8px}
+.api-box input{flex:1}
+.api-box button{
+  border:1px solid var(--border);background:#0c1016;color:var(--text);
+  border-radius:8px;padding:0 14px;cursor:pointer
+}
+.regime-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.regime{
+  padding:12px 8px;border:1px solid var(--border);border-radius:9px;
+  text-align:center;background:#0c1016;color:var(--muted);font-size:12px;
+  cursor:pointer
+}
+.regime.active{color:var(--text);border-color:#557dbb;background:#111c2c}
+footer{text-align:center;color:#687384;font-size:11px;padding:30px 0 15px}
+.hidden{display:none!important}
+@media(max-width:1050px){.grid{grid-template-columns:1fr 1fr}.ticker-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.ticker-grid{grid-template-columns:1fr 1fr}.regime-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">Trade<span>Flow</span></div>
+    <div class="status"><span class="dot"></span>Trading &amp; Risk Calculator</div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="grid">
+
+    <section class="panel">
+      <h2>Risk &amp; Probability Calculator</h2>
+      <div class="sub">Estimate the mathematical outcome of a repeated trade setup.</div>
+
+      <div class="form-grid">
+        <div>
+          <label>Starting Balance</label>
+          <input id="balance" type="number" min="1" step="0.01" value="10000">
+        </div>
+        <div>
+          <label>Risk Per Trade (%)</label>
+          <input id="risk" type="number" min="0.01" max="100" step="0.1" value="2">
+        </div>
+        <div>
+          <label>Position Size (% of balance)</label>
+          <input id="position" type="number" min="0.01" max="100" step="0.1" value="30">
+        </div>
+        <div>
+          <label>Win Rate (%)</label>
+          <input id="winRate" type="number" min="0" max="100" step="0.1" value="55">
+        </div>
+        <div class="full">
+          <label>Number of Trades</label>
+          <input id="trades" type="number" min="1" max="5000" step="1" value="100">
+        </div>
+      </div>
+
+      <div class="section-title">Calculation Mode</div>
+      <div class="mode">
+        <button id="avgMode" class="active">Average Win / Loss</button>
+        <button id="pfMode">Profit Factor</button>
+      </div>
+
+      <div id="avgFields" class="form-grid">
+        <div>
+          <label>Average Win (%)</label>
+          <input id="avgWin" type="number" min="0" step="0.01" value="4">
+        </div>
+        <div>
+          <label>Average Loss (%)</label>
+          <input id="avgLoss" type="number" min="0.01" step="0.01" value="2">
+        </div>
+      </div>
+
+      <div id="pfFields" class="form-grid hidden">
+        <div>
+          <label>Profit Factor</label>
+          <input id="profitFactor" type="number" min="0.01" step="0.01" value="1.8">
+        </div>
+        <div>
+          <label>Average Loss (%)</label>
+          <input id="pfLoss" type="number" min="0.01" step="0.01" value="6.67">
+        </div>
+      </div>
+
+      <button class="primary" id="calculate">Calculate</button>
+
+      <div class="section-title">Results</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Expected Return / Trade</div><div id="expectedTrade" class="v">—</div></div>
+        <div class="metric"><div class="k">Expected Ending Balance</div><div id="ending" class="v">—</div></div>
+        <div class="metric"><div class="k">Expected Profit</div><div id="profit" class="v">—</div></div>
+        <div class="metric"><div class="k">Maximum Loss / Trade</div><div id="maxLoss" class="v">—</div></div>
+        <div class="metric"><div class="k">Effective Avg Win</div><div id="effectiveWin" class="v">—</div></div>
+        <div class="metric"><div class="k">Effective Avg Loss</div><div id="effectiveLoss" class="v">—</div></div>
+        <div class="metric"><div class="k">Profit Factor</div><div id="resultPF" class="v">—</div></div>
+        <div class="metric"><div class="k">Break-even Win Rate</div><div id="breakeven" class="v">—</div></div>
+      </div>
+
+      <div class="note">
+        This is a mathematical projection, not a historical backtest or a promise of future performance.
+        Position size converts the average price move into an approximate account-level return.
+        Profit Factor mode assumes the supplied average loss corresponds to the risk framework.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Live Market Watch</h2>
+      <div class="sub">Optional Twelve Data feed. No API key is included in this public build.</div>
+
+      <div id="tickers" class="ticker-grid"></div>
+
+      <div class="section-title">Market Snapshot</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Top Mover</div><div id="topMover" class="v">—</div></div>
+        <div class="metric"><div class="k">Average Move</div><div id="avgMove" class="v">—</div></div>
+      </div>
+
+      <div class="section-title">Local API Key</div>
+      <div class="api-box">
+        <input id="apiKey" type="password" placeholder="Paste your Twelve Data key locally">
+        <button id="loadMarket">Load</button>
+      </div>
+      <div class="small" style="margin-top:8px">
+        For a public website, use a backend/serverless proxy instead of publishing an API key in browser code.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Market Regime Reference</h2>
+      <div class="sub">A simple manual classification tool — no fake AI detection.</div>
+
+      <div id="regimes" class="regime-grid">
+        <div class="regime" data-regime="Bullish">Bullish</div>
+        <div class="regime" data-regime="Bearish">Bearish</div>
+        <div class="regime" data-regime="Ranging">Ranging</div>
+        <div class="regime" data-regime="Consolidating">Consolidating</div>
+        <div class="regime active" data-regime="Mixed">Mixed</div>
+      </div>
+
+      <div class="section-title">Selected Regime</div>
+      <div class="metric">
+        <div class="k">CURRENT CLASSIFICATION</div>
+        <div id="selectedRegime" class="v blue">Mixed</div>
+      </div>
+
+      <div class="section-title">Quick Definitions</div>
+      <div class="small" style="line-height:1.8">
+        <b>Bullish:</b> upward directional bias.<br>
+        <b>Bearish:</b> downward directional bias.<br>
+        <b>Ranging:</b> price oscillates between identifiable areas.<br>
+        <b>Consolidating:</b> compressed movement before a possible expansion.<br>
+        <b>Mixed:</b> signals do not clearly agree.
+      </div>
+
+      <div class="section-title">Project Notes</div>
+      <div class="note">
+        TradeFlow deliberately avoids claiming that simple formulas are “AI”.
+        The goal is a clean, understandable trading calculator that can be expanded later.
+      </div>
+    </section>
+
+  </div>
+
+  <section class="panel" style="margin-top:18px">
+    <h2>How the Profit Factor Mode Works</h2>
+    <div class="sub">
+      PF = Gross Profit ÷ Gross Loss. If PF = 2.0, the strategy historically/model-wise generates
+      about R2 of gross profit for every R1 of gross loss, before costs and execution effects.
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="k">PF Example</div><div class="v">2.00</div></div>
+      <div class="metric"><div class="k">Average Loss</div><div class="v">1.00R</div></div>
+      <div class="metric"><div class="k">Implied Average Win</div><div class="v">2.00R</div></div>
+      <div class="metric"><div class="k">At 50% Win Rate</div><div class="v green">Positive EV</div></div>
+    </div>
+  </section>
+
+  <footer>TradeFlow — educational trading &amp; risk calculations. Not financial advice.</footer>
+</main>
+
+<script>
+const symbols = ["EUR/USD","GBP/USD","USD/JPY","XAU/USD","BTC/USD","ETH/USD","AAPL","TSLA"];
+let mode = "avg";
+let marketData = [];
+
+const $ = id => document.getElementById(id);
+const money = n => "$" + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = n => (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+
+function setMode(next){
+  mode = next;
+  $("avgMode").classList.toggle("active", next === "avg");
+  $("pfMode").classList.toggle("active", next === "pf");
+  $("avgFields").classList.toggle("hidden", next !== "avg");
+  $("pfFields").classList.toggle("hidden", next !== "pf");
+}
+$("avgMode").onclick = () => setMode("avg");
+$("pfMode").onclick = () => setMode("pf");
+
+function calculate(){
+  const balance = Math.max(0.01, Number($("balance").value) || 0);
+  const riskPct = Math.max(0.0001, Number($("risk").value) || 0);
+  const positionPct = Math.max(0.0001, Number($("position").value) || 0);
+  const winRate = Math.min(100, Math.max(0, Number($("winRate").value) || 0)) / 100;
+  const trades = Math.min(5000, Math.max(1, Math.floor(Number($("trades").value) || 1)));
+
+  let winMove, lossMove, pf;
+
+  if(mode === "avg"){
+    winMove = Math.max(0, Number($("avgWin").value) || 0);
+    lossMove = Math.max(0.0001, Number($("avgLoss").value) || 0);
+    pf = (winRate * winMove) / ((1 - winRate) * lossMove);
+  } else {
+    pf = Math.max(0.0001, Number($("profitFactor").value) || 0);
+    lossMove = Math.max(0.0001, Number($("pfLoss").value) || 0);
+    winMove = pf * lossMove;
+  }
+
+  // Position size turns the price/trade move into an approximate account return.
+  const effectiveWinPct = (positionPct / 100) * winMove;
+  const effectiveLossPct = (positionPct / 100) * lossMove;
+
+  const expectedReturn = winRate * effectiveWinPct - (1 - winRate) * effectiveLossPct;
+  const expectedEnding = balance * Math.pow(1 + expectedReturn / 100, trades);
+  const expectedProfit = expectedEnding - balance;
+  const maxLoss = balance * (riskPct / 100);
+
+  // Break-even win rate for the current average win/loss.
+  const breakeven = (effectiveLossPct / (effectiveWinPct + effectiveLossPct)) * 100;
+
+  $("expectedTrade").textContent = pct(expectedReturn);
+  $("expectedTrade").className = "v " + (expectedReturn >= 0 ? "green" : "red");
+  $("ending").textContent = money(expectedEnding);
+  $("ending").className = "v " + (expectedEnding >= balance ? "green" : "red");
+  $("profit").textContent = (expectedProfit >= 0 ? "+" : "") + money(expectedProfit);
+  $("profit").className = "v " + (expectedProfit >= 0 ? "green" : "red");
+  $("maxLoss").textContent = money(maxLoss);
+  $("effectiveWin").textContent = "+" + effectiveWinPct.toFixed(2) + "%";
+  $("effectiveLoss").textContent = "-" + effectiveLossPct.toFixed(2) + "%";
+  $("resultPF").textContent = isFinite(pf) ? pf.toFixed(2) : "—";
+  $("breakeven").textContent = isFinite(breakeven) ? breakeven.toFixed(2) + "%" : "—";
+}
+
+$("calculate").onclick = calculate;
+calculate();
+
+document.querySelectorAll(".regime").forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll(".regime").forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+    $("selectedRegime").textContent = el.dataset.regime;
+  };
+});
+
+function renderTickers(){
+  const box = $("tickers");
+  box.innerHTML = "";
+  if(!marketData.length){
+    symbols.forEach(s => {
+      const div = document.createElement("div");
+      div.className = "ticker";
+      div.innerHTML = `
+        <div class="ticker-top"><span class="symbol">${s}</span><span class="small">—</span></div>
+        <div class="price">—</div>
+        <div class="change small">No live data</div>`;
+      box.appendChild(div);
+    });
+    $("topMover").textContent = "—";
+    $("avgMove").textContent = "—";
+    return;
+  }
+
+  marketData.forEach(x => {
+    const div = document.createElement("div");
+    div.className = "ticker";
+    const change = Number(x.change || 0);
+    div.innerHTML = `
+      <div class="ticker-top"><span class="symbol">${x.symbol}</span><span class="small">${x.datetime || ""}</span></div>
+      <div class="price">${x.close ?? "—"}</div>
+      <div class="change ${change >= 0 ? "green" : "red"}">${pct(change)}</div>`;
+    box.appendChild(div);
+  });
+
+  const sorted = [...marketData].sort((a,b) => Math.abs(Number(b.change||0))-Math.abs(Number(a.change||0)));
+  const avg = marketData.reduce((s,x)=>s+Math.abs(Number(x.change||0)),0)/marketData.length;
+  $("topMover").textContent = sorted[0] ? sorted[0].symbol + " " + pct(Number(sorted[0].change||0)) : "—";
+  $("avgMove").textContent = avg.toFixed(2) + "%";
+}
+
+async function loadMarket(){
+  const key = $("apiKey").value.trim();
+  if(!key){
+    alert("Enter a Twelve Data API key locally. No key is stored in this public file.");
+    return;
+  }
+
+  marketData = [];
+  renderTickers();
+
+  // Twelve Data's quote endpoint is queried one symbol at a time here to keep
+  // this plain static demo simple.
+  for(const symbol of symbols){
+    try{
+      const url = "https://api.twelvedata.com/quote?symbol=" +
+        encodeURIComponent(symbol) + "&apikey=" + encodeURIComponent(key);
+      const res = await fetch(url);
+      const data = await res.json();
+      if(data && data.close){
+        marketData.push({
+          symbol,
+          close: data.close,
+          change: data.percent_change,
+          datetime: data.datetime
+        });
+      }
+    }catch(err){}
+  }
+  renderTickers();
+}
+
+$("loadMarket").onclick = loadMarket;
+renderTickers();
+</script>
+</body>
+</html>
